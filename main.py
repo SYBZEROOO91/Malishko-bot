@@ -11,7 +11,7 @@ TPLINK_PASSWORD = "DjMoroz1991"
 ROUTER_MAC = "AC-A7-F1-1D-9D-5C"
 
 BOT_TOKEN = "9144693739:AAGpzCAJqvXh1g63rNmauThBHkFTIKFwjhU"
-CHAT_IDS = ["-1004415689510"]
+CHAT_IDS = ["2016745729"]
 # =============================================
 
 TERMINAL_UUID = str(uuid.uuid4())
