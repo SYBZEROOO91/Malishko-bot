@@ -54,7 +54,6 @@ def get_tplink_token():
         res = requests.post(url, json=payload, timeout=15).json()
         if res.get("error_code") == 0:
             return res["result"]["token"]
-        print(f"Ошибка авторизации TP-Link: {res}")
     except Exception as e:
         print(f"Ошибка запроса токена TP-Link: {e}")
     return None
@@ -74,7 +73,30 @@ def check_router():
             devices = res.get("result", {}).get("deviceList", [])
             clean_target = ROUTER_MAC.upper().replace(":", "").replace("-", "")
 
-            found = False
             for dev in devices:
                 dev_mac = str(dev.get("deviceMac", "")).upper().replace(":", "").replace("-", "")
-                alias = dev.get("alias
+                alias = dev.get("alias", dev.get("deviceName", "Роутер"))
+                status_val = dev.get("status")
+
+                if clean_target in dev_mac or not clean_target:
+                    is_online = (status_val == 1)
+                    current_status = is_online
+                    last_check_time = time.strftime("%H:%M:%S")
+                    raw_debug_info = f"{alias} (MAC: {dev.get('deviceMac')}) | статус: {status_val}"
+                    return is_online
+
+            macs = [f"{d.get('alias', 'Устройство')}: {d.get('deviceMac')} (status={d.get('status')})" for d in devices]
+            if len(devices) == 1:
+                dev = devices[0]
+                is_online = (dev.get("status") == 1)
+                current_status = is_online
+                last_check_time = time.strftime("%H:%M:%S")
+                raw_debug_info = f"Автовыбор единственного роутера: {macs[0]}"
+                return is_online
+
+            raw_debug_info = f"MAC не совпал. Найдено в аккаунте: {macs}"
+        else:
+            raw_debug_info = f"Ошибка облака: {res.get('msg', res)}"
+    except Exception as e:
+        raw_debug_info = f"Ошибка запроса: {e}"
+    return
