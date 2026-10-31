@@ -19,6 +19,7 @@ app = Flask(__name__)
 
 current_status = None
 last_check_time = "еще не проверялось"
+raw_debug_info = "нет данных"
 
 @app.route('/')
 def home():
@@ -58,36 +59,22 @@ def get_tplink_token():
         print(f"Ошибка запроса токена TP-Link: {e}")
     return None
 
-def is_router_online(token):
+def check_router():
+    global current_status, last_check_time, raw_debug_info
+    token = get_tplink_token()
     if not token:
+        raw_debug_info = "Не удалось получить токен авторизации TP-Link"
         return None
+
     url = f"https://n-wap.tplinkcloud.com?token={token}"
     payload = {"method": "getDeviceList", "params": {}}
     try:
         res = requests.post(url, json=payload, timeout=15).json()
         if res.get("error_code") == 0:
-            for dev in res.get("result", {}).get("deviceList", []):
-                mac = dev.get("deviceMac", "").upper().replace(":", "-")
-                target_mac = ROUTER_MAC.upper().replace(":", "-")
-                if target_mac in mac or mac in target_mac:
-                    return dev.get("status") == 1
-    except Exception as e:
-        print(f"Ошибка проверки статуса: {e}")
-    return None
+            devices = res.get("result", {}).get("deviceList", [])
+            clean_target = ROUTER_MAC.upper().replace(":", "").replace("-", "")
 
-def monitor():
-    global current_status, last_check_time
-    token = get_tplink_token()
-    last_status = None
-    offline_count = 0
-
-    while True:
-        try:
-            status = is_router_online(token)
-            if status is None:
-                token = get_tplink_token()
-                status = is_router_online(token)
-
-            if status is not None:
-                current_status = status
-                last_check_time = time.strftime("%H:%M:%S")
+            found = False
+            for dev in devices:
+                dev_mac = str(dev.get("deviceMac", "")).upper().replace(":", "").replace("-", "")
+                alias = dev.get("alias
